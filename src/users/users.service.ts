@@ -1,44 +1,58 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { Prisma } from '../generated/prisma/client.js';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto.js';
-
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-}
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [];   
-  private nextId = 1;          
+  constructor(private readonly prisma: PrismaService) {}
 
-  create(dto: CreateUserDto): User {
-    const user: User = { id: this.nextId++, ...dto };
-    this.users.push(user);
-    return user;
+  async create(dto: CreateUserDto) {
+    try {
+      return await this.prisma.user.create({ data: dto });
+    } catch (e) {
+      this.handleError(e);
+    }
   }
 
-  findAll(): User[] {
-    return this.users;
+  findAll() {
+    return this.prisma.user.findMany({ orderBy: { id: 'asc' } });
   }
 
-  findOne(id: number): User {
-    const user = this.users.find((u) => u.id === id);
+  async findOne(id: number) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new NotFoundException(`User ${id} not found`);
     }
     return user;
   }
 
-  update(id: number, dto: UpdateUserDto): User {
-    const user = this.findOne(id);   
-    Object.assign(user, dto);       
-    return user;
+  async update(id: number, dto: UpdateUserDto) {
+    await this.findOne(id);
+    try {
+      return await this.prisma.user.update({ where: { id }, data: dto });
+    } catch (e) {
+      this.handleError(e);
+    }
   }
 
-  remove(id: number) {
-    const user = this.findOne(id);
-    this.users = this.users.filter((u) => u.id !== id);
-    return { message: `User ${user.id} deleted` };
+  async remove(id: number) {
+    await this.findOne(id);
+    await this.prisma.user.delete({ where: { id } });
+    return { message: `User ${id} deleted` };
+  }
+
+  private handleError(e: unknown): never {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === 'P2002'
+    ) {
+      throw new ConflictException('Email already exists');
+    }
+    throw e;
   }
 }
