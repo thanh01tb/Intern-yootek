@@ -6,4 +6,6 @@ export class CreateUserDto {
 export class UpdateUserDto {
   name?: string;
   email?: string;
+  bio?: string;
+  avatar?: string;
 }

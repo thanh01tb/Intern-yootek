@@ -4,7 +4,9 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { UsersModule } from './users/users.module.js';
 import { ConfigModule } from '@nestjs/config';
-
+import { AuthModule } from './auth/auth.module.js';
+import { MiddlewareConsumer,NestModule , RequestMethod } from '@nestjs/common';
+import { AuthMiddleware } from './auth/auth.middleware.js';
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
@@ -18,8 +20,19 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     }),
     ConfigModule.forRoot({ isGlobal: true }),
     UsersModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(AuthMiddleware)
+      .exclude(
+        { path: 'auth/register', method: RequestMethod.POST },
+        { path: 'auth/login', method: RequestMethod.POST },
+      )
+      .forRoutes('*');
+  }
+}

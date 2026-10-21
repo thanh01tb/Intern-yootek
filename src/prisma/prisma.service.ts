@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client.js';
+import { Module } from '@nestjs/common';
 
 @Injectable()
 export class PrismaService
@@ -23,3 +24,9 @@ export class PrismaService
     await this.$disconnect();
   }
 }
+
+@Module({
+  providers: [PrismaService],
+  exports: [PrismaService], // bắt buộc phải có dòng này
+})
+export class PrismaModule {}
