@@ -8,6 +8,9 @@ import { AuthModule } from './auth/auth.module.js';
 import { MiddlewareConsumer,NestModule , RequestMethod } from '@nestjs/common';
 //import { AuthMiddleware } from './auth/auth.middleware.js';
 import { PostsModule } from './posts/posts.module.js';
+import { validateEach } from '@nestjs/common/utils/validate-each.util.js';
+import { validateEnv } from './config/env.validation.js';
+import { EnvCheckMiddleware } from './common/logger.middleware.js';
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
@@ -17,7 +20,11 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       appSecret: 'YOUR_APP_SECRET',
       serviceId: 'my-app',
     }),
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ 
+      isGlobal: true ,
+      envFilePath: '.env' ,
+      validate: validateEnv,
+    }),
     UsersModule,
     AuthModule,
     PostsModule,
@@ -26,4 +33,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
   providers: [AppService],
 })
 
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer){
+    consumer.apply(EnvCheckMiddleware).forRoutes('*') ;
+  }
+}
