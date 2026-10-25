@@ -1,5 +1,6 @@
-import { Injectable, Logger, NestMiddleware } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, NestMiddleware } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
@@ -13,5 +14,16 @@ export class LoggerMiddleware implements NestMiddleware {
       );
     });
     next();
+  }
+}
+
+@Injectable()
+export class EnvCheckMiddleware implements NestMiddleware {
+    constructor( private config: ConfigService) {}
+    use(req: any, res:any , next: () => void){
+      if(!this.config.get('JWT_SECRET') || !this.config.get('DATABASE_URL')){
+          throw new InternalServerErrorException('Server chưa cấu hình đủ biến môi trường');
+      }
+      next() ;
   }
 }
